@@ -1,0 +1,248 @@
+import json
+import os
+
+class Artista:
+    def __init__(self, nome, data_nascimento, local_nascimento, biografia, estilos_artistico):
+        self.nome = nome
+        self.data_nascimento = data_nascimento
+        self.local_nascimento = local_nascimento
+        self.biografia = biografia
+        self.estilos_artistico = estilos_artistico
+
+    def to_dict(self):
+        return self.__dict__
+
+class EstiloArtistico:
+    def __init__(self, nome, periodo_influencia, descricao, escola_principal):
+        self.nome = nome
+        self.periodo_influencia = periodo_influencia
+        self.descricao = descricao
+        self.escola_principal = escola_principal
+
+    def to_dict(self):
+        return self.__dict__
+
+class Documento:
+    def __init__(self, tipo, descricao):
+        self.tipo = tipo
+        self.descricao = descricao
+
+    def to_dict(self):
+        return self.__dict__
+
+class PessoaRetratada:
+    def __init__(self, nome, biografia):
+        self.nome = nome
+        self.biografia = biografia
+
+    def to_dict(self):
+        return self.__dict__
+
+class Obra:
+    def __init__(self, titulo, data_criacao, tema, estilo_artistico, descricao, tecnica, autor, localizacao):
+        self.titulo = titulo
+        self.data_criacao = data_criacao
+        self.tema = tema
+        self.estilo_artistico = estilo_artistico
+        self.descricao = descricao
+        self.tecnica = tecnica
+        self.autor = autor
+        self.localizacao = localizacao
+        self.documentos = []
+        self.pessoas_retratadas = []
+
+    def to_dict(self):
+        data = self.__dict__.copy()
+        data['documentos'] = [doc.to_dict() for doc in self.documentos]
+        data['pessoas_retratadas'] = [pessoa.to_dict() for pessoa in self.pessoas_retratadas]
+        return data
+
+class Emprestimo:
+    def __init__(self, obra, periodo, evento, responsavel, tema):
+        self.obra = obra
+        self.periodo = periodo
+        self.evento = evento
+        self.responsavel = responsavel
+        self.tema = tema
+
+    def to_dict(self):
+        return self.__dict__
+
+class VisitaGuiada:
+    def __init__(self, tema, descricao, obras):
+        self.tema = tema
+        self.descricao = descricao
+        self.obras = obras
+
+    def to_dict(self):
+        return self.__dict__
+
+class Museu:
+    def __init__(self):
+        self.artistas = []
+        self.estilos_artistico = []
+        self.obras = []
+        self.emprestimos = []
+        self.visitas_guiadas = []
+
+    def adicionar_artista(self, artista):
+        self.artistas.append(artista)
+        
+    def adicionar_estilo_artistico(self, estilo):
+        self.estilos_artistico.append(estilo)
+        
+    def adicionar_obra(self, obra):
+        self.obras.append(obra)
+
+    def registrar_emprestimo(self, emprestimo):
+        self.emprestimos.append(emprestimo)
+        
+    def registrar_visita_guiada(self, visita):
+        self.visitas_guiadas.append(visita)
+
+    def listar_obras(self):
+        return sorted(self.obras, key=lambda obra: obra.titulo)
+
+    def salvar_dados(self, arquivo):
+        try:
+            with open(arquivo, 'w') as f:
+                dados = {
+                    "artistas": [artista.to_dict() for artista in self.artistas],
+                    "estilos_artistico": [estilo.to_dict() for estilo in self.estilos_artistico],
+                    "obras": [obra.to_dict() for obra in self.obras],
+                    "emprestimos": [emprestimo.to_dict() for emprestimo in self.emprestimos],
+                    "visitas_guiadas": [visita.to_dict() for visita in self.visitas_guiadas]
+                }
+                json.dump(dados, f, ensure_ascii=False, indent=4)
+        except IOError as e:
+            print(f"Erro ao salvar dados: {e}")
+
+    def carregar_dados(self, arquivo):
+        if not os.path.exists(arquivo):
+            return
+        try:
+            with open(arquivo, 'r') as f:
+                dados = json.load(f)
+                self.artistas = [Artista(**data) for data in dados.get('artistas', [])]
+                self.estilos_artistico = [EstiloArtistico(**data) for data in dados.get('estilos_artistico', [])]
+                self.obras = []
+                for data in dados.get('obras', []):
+                    obra = Obra(data['titulo'], data['data_criacao'], data['tema'], data['estilo_artistico'], data['descricao'], data['tecnica'], data['autor'], data['localizacao'])
+                    obra.documentos = [Documento(**doc) for doc in data.get('documentos', [])]
+                    obra.pessoas_retratadas = [PessoaRetratada(**pessoa) for pessoa in data.get('pessoas_retratadas', [])]
+                    self.obras.append(obra)
+                self.emprestimos = [Emprestimo(**data) for data in dados.get('emprestimos', [])]
+                self.visitas_guiadas = [VisitaGuiada(**data) for data in dados.get('visitas_guiadas', [])]
+        except IOError as e:
+            print(f"Erro ao carregar dados: {e}")
+
+def menu():
+    print("\nMenu do Museu")
+    print("1. Adicionar Artista")
+    print("2. Adicionar Estilo Artístico")
+    print("3. Adicionar Obra")
+    print("4. Registrar Empréstimo")
+    print("5. Registrar Visita Guiada")
+    print("6. Listar Obras")
+    print("7. Salvar Dados")
+    print("8. Carregar Dados")
+    print("9. Sair")
+    return input("Escolha uma opção: ")
+
+def adicionar_artista(museu):
+    nome = input("Nome do artista: ")
+    data_nascimento = input("Data de nascimento (AAAA-MM-DD): ")
+    local_nascimento = input("Local de nascimento: ")
+    biografia = input("Biografia: ")
+    estilos_artistico = input("Estilos artísticos (separados por vírgula): ").split(',')
+    artista = Artista(nome, data_nascimento, local_nascimento, biografia, estilos_artistico)
+    museu.adicionar_artista(artista)
+
+def adicionar_estilo_artistico(museu):
+    nome = input("Nome do estilo artístico: ")
+    periodo_influencia = input("Período de influência: ")
+    descricao = input("Descrição: ")
+    escola_principal = input("Escola principal: ")
+    estilo = EstiloArtistico(nome, periodo_influencia, descricao, escola_principal)
+    museu.adicionar_estilo_artistico(estilo)
+
+def adicionar_obra(museu):
+    titulo = input("Título da obra: ")
+    data_criacao = input("Data de criação: ")
+    tema = input("Tema: ")
+    estilo_artistico = input("Estilo artístico: ")
+    descricao = input("Descrição: ")
+    tecnica = input("Técnica utilizada: ")
+    autor = input("Autor: ")
+    localizacao = input("Localização na sala de exposição: ")
+    obra = Obra(titulo, data_criacao, tema, estilo_artistico, descricao, tecnica, autor, localizacao)
+    
+    while True:
+        adicionar_doc = input("Deseja adicionar um documento relacionado? (s/n): ").lower()
+        if adicionar_doc == 's':
+            tipo = input("Tipo do documento: ")
+            descricao_doc = input("Descrição do documento: ")
+            documento = Documento(tipo, descricao_doc)
+            obra.documentos.append(documento)
+        else:
+            break
+
+    while True:
+        adicionar_pessoa = input("Deseja adicionar uma pessoa retratada? (s/n): ").lower()
+        if adicionar_pessoa == 's':
+            nome_pessoa = input("Nome da pessoa: ")
+            biografia_pessoa = input("Biografia da pessoa: ")
+            pessoa = PessoaRetratada(nome_pessoa, biografia_pessoa)
+            obra.pessoas_retratadas.append(pessoa)
+        else:
+            break
+
+    museu.adicionar_obra(obra)
+
+def registrar_emprestimo(museu):
+    obra = input("Título da obra: ")
+    periodo = input("Período do empréstimo: ")
+    evento = input("Nome do evento: ")
+    responsavel = input("Responsável: ")
+    tema = input("Tema: ")
+    emprestimo = Emprestimo(obra, periodo, evento, responsavel, tema)
+    museu.registrar_emprestimo(emprestimo)
+
+def registrar_visita_guiada(museu):
+    tema = input("Tema da visita guiada: ")
+    descricao = input("Descrição: ")
+    obras = input("Obras a serem visitadas (separadas por vírgula): ").split(',')
+    visita = VisitaGuiada(tema, descricao, obras)
+    museu.registrar_visita_guiada(visita)
+
+def listar_obras(museu):
+    for obra in museu.listar_obras():
+        print(f"Título: {obra.titulo}, Autor: {obra.autor}")
+
+def main():
+    museu = Museu()
+    while True:
+        opcao = menu()
+        if opcao == '1':
+            adicionar_artista(museu)
+        elif opcao == '2':
+            adicionar_estilo_artistico(museu)
+        elif opcao == '3':
+            adicionar_obra(museu)
+        elif opcao == '4':
+            registrar_emprestimo(museu)
+        elif opcao == '5':
+            registrar_visita_guiada(museu)
+        elif opcao == '6':
+            listar_obras(museu)
+        elif opcao == '7':
+            museu.salvar_dados("museu_dados.json")
+        elif opcao == '8':
+            museu.carregar_dados("museu_dados.json")
+        elif opcao == '9':
+            break
+        else:
+            print("Opção inválida!")
+
+if __name__ == "__main__":
+    main()
